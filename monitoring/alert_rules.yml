@@ -1,0 +1,96 @@
+groups:
+  - name: service-availability
+    rules:
+      - alert: OrderServiceDown
+        expr: up{job="order_service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: Order service is down
+          description: Order service metrics endpoint has been unreachable for more than 30 seconds.
+
+      - alert: AuthServiceDown
+        expr: up{job="auth_service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: Auth service is down
+          description: Auth service metrics endpoint has been unreachable for more than 30 seconds.
+
+      - alert: ProductServiceDown
+        expr: up{job="product_service"} == 0
+        for: 30s
+        labels:
+          severity: high
+        annotations:
+          summary: Product service is down
+          description: Product service metrics endpoint has been unreachable for more than 30 seconds.
+
+      - alert: UserServiceDown
+        expr: up{job="user_service"} == 0
+        for: 30s
+        labels:
+          severity: high
+        annotations:
+          summary: User service is down
+          description: User service metrics endpoint has been unreachable for more than 30 seconds.
+
+      - alert: ChatServiceDown
+        expr: up{job="chat_service"} == 0
+        for: 30s
+        labels:
+          severity: medium
+        annotations:
+          summary: Chat service is down
+          description: Chat service metrics endpoint has been unreachable for more than 30 seconds.
+
+  - name: request-performance
+    rules:
+      - alert: HighOrderServiceErrorRate
+        expr: |
+          rate(http_requests_total{job="order_service", status=~"5.."}[2m])
+          /
+          rate(http_requests_total{job="order_service"}[2m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Order service error rate above 10%
+          description: More than 10% of requests to order service are returning 5xx errors.
+
+      - alert: HighAuthServiceErrorRate
+        expr: |
+          rate(http_requests_total{job="auth_service", status=~"5.."}[2m])
+          /
+          rate(http_requests_total{job="auth_service"}[2m]) > 0.05
+        for: 1m
+        labels:
+          severity: high
+        annotations:
+          summary: Auth service error rate above 5%
+          description: More than 5% of requests to auth service are returning 5xx errors.
+
+      - alert: SlowOrderServiceResponse
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket{job="order_service"}[5m])
+          ) > 2.0
+        for: 2m
+        labels:
+          severity: high
+        annotations:
+          summary: Order service p95 latency above 2 seconds
+          description: The 95th percentile response time for order service exceeds 2 seconds.
+
+  - name: request-volume
+    rules:
+      - alert: OrderServiceHighRequestRate
+        expr: rate(http_requests_total{job="order_service"}[1m]) > 50
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Order service receiving more than 50 requests per second
+          description: Order service request rate is elevated and may require scaling.

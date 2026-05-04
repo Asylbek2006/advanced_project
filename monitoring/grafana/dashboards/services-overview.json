@@ -1,0 +1,125 @@
+{
+  "title": "Qadam Retail Platform - Services Overview",
+  "uid": "qadam-services-overview",
+  "version": 1,
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Health (1 = UP, 0 = DOWN)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 6 },
+      "targets": [
+        {
+          "expr": "up{job=~\"auth_service|user_service|product_service|order_service|chat_service\"}",
+          "legendFormat": "{{job}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Request Rate per Service (req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{job=~\"auth_service|user_service|product_service|order_service|chat_service\"}[1m])",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Error Rate per Service (5xx req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{job=~\"auth_service|user_service|product_service|order_service|chat_service\",status=~\"5..\"}[1m])",
+          "legendFormat": "{{job}} errors"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Order Service - p95 Response Time (seconds)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"order_service\"}[5m]))",
+          "legendFormat": "order_service p95"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Auth Service - p95 Response Time (seconds)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"auth_service\"}[5m]))",
+          "legendFormat": "auth_service p95"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Total Healthy Services",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 22, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "count(up{job=~\"auth_service|user_service|product_service|order_service|chat_service\"} == 1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 3 },
+              { "color": "green", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Total Down Services",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 22, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "count(up{job=~\"auth_service|user_service|product_service|order_service|chat_service\"} == 0) OR vector(0)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

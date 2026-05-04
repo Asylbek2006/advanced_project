@@ -1,0 +1,213 @@
+services:
+  database:
+    image: postgres:16-alpine
+    container_name: qadam_database
+    environment:
+      POSTGRES_USER: qadam_user
+      POSTGRES_PASSWORD: qadam_password
+      POSTGRES_DB: qadam_retail
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qadam_user -d qadam_retail"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - qadam_network
+
+  auth_service:
+    build: ./services/auth_service
+    container_name: auth_service
+    environment:
+      DATABASE_HOST: database
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: qadam_retail
+      DATABASE_USER: qadam_user
+      DATABASE_PASSWORD: qadam_password
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - qadam_network
+
+  user_service:
+    build: ./services/user_service
+    container_name: user_service
+    environment:
+      DATABASE_HOST: database
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: qadam_retail
+      DATABASE_USER: qadam_user
+      DATABASE_PASSWORD: qadam_password
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - qadam_network
+
+  product_service:
+    build: ./services/product_service
+    container_name: product_service
+    environment:
+      DATABASE_HOST: database
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: qadam_retail
+      DATABASE_USER: qadam_user
+      DATABASE_PASSWORD: qadam_password
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - qadam_network
+
+  order_service:
+    build: ./services/order_service
+    container_name: order_service
+    environment:
+      DATABASE_HOST: database
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: qadam_retail
+      DATABASE_USER: qadam_user
+      DATABASE_PASSWORD: qadam_password
+      AUTH_SERVICE_URL: http://auth_service:8000
+      USER_SERVICE_URL: http://user_service:8000
+      PRODUCT_SERVICE_URL: http://product_service:8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      auth_service:
+        condition: service_started
+      user_service:
+        condition: service_started
+      product_service:
+        condition: service_started
+    networks:
+      - qadam_network
+
+  chat_service:
+    build: ./services/chat_service
+    container_name: chat_service
+    environment:
+      DATABASE_HOST: database
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: qadam_retail
+      DATABASE_USER: qadam_user
+      DATABASE_PASSWORD: qadam_password
+      AUTH_SERVICE_URL: http://auth_service:8000
+      USER_SERVICE_URL: http://user_service:8000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      auth_service:
+        condition: service_started
+      user_service:
+        condition: service_started
+    networks:
+      - qadam_network
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    restart: unless-stopped
+    networks:
+      - qadam_network
+
+  gateway:
+    build: ./app_gateway
+    container_name: gateway
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - auth_service
+      - user_service
+      - product_service
+      - order_service
+      - chat_service
+    networks:
+      - qadam_network
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    depends_on:
+      - auth_service
+      - user_service
+      - product_service
+      - order_service
+      - chat_service
+    networks:
+      - qadam_network
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin12345
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    networks:
+      - qadam_network
+
+volumes:
+  postgres_data:
+  grafana_data:
+
+networks:
+  qadam_network:
+    driver: bridge

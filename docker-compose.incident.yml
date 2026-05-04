@@ -1,0 +1,4 @@
+services:
+  order_service:
+    environment:
+      DATABASE_HOST: broken_database

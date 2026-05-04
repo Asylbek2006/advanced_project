@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qadam Retail Platform</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="layout_shell">
+    <section class="hero_panel">
+      <div>
+        <p class="eyebrow_text">Asylbek | Bigali | Miras</p>
+        <h1>Qadam Retail Platform</h1>
+        <p class="hero_text">A microservices retail workspace with authentication, product browsing, order creation, team messaging, monitoring, and incident simulation.</p>
+      </div>
+      <div class="status_box">
+        <span id="sessionState">Logged out</span>
+      </div>
+    </section>
+
+    <section class="grid_layout">
+      <article class="panel_card">
+        <h2>Sign In</h2>
+        <input id="usernameInput" type="text" placeholder="Username">
+        <input id="passwordInput" type="password" placeholder="Password">
+        <button id="loginButton">Sign In</button>
+        <p id="loginResult" class="info_text"></p>
+      </article>
+
+      <article class="panel_card">
+        <h2>Users</h2>
+        <div id="userList" class="list_container"></div>
+      </article>
+
+      <article class="panel_card wide_panel">
+        <h2>Products</h2>
+        <div id="productList" class="product_grid"></div>
+      </article>
+
+      <article class="panel_card">
+        <h2>Create Order</h2>
+        <select id="productSelect"></select>
+        <input id="quantityInput" type="number" min="1" value="1">
+        <button id="orderButton">Create Order</button>
+        <p id="orderResult" class="info_text"></p>
+      </article>
+
+      <article class="panel_card wide_panel">
+        <h2>Order History</h2>
+        <div id="orderList" class="list_container"></div>
+      </article>
+
+      <article class="panel_card">
+        <h2>Chat</h2>
+        <select id="receiverSelect"></select>
+        <textarea id="messageInput" rows="4" placeholder="Message"></textarea>
+        <button id="sendMessageButton">Send Message</button>
+        <p id="chatResult" class="info_text"></p>
+      </article>
+
+      <article class="panel_card wide_panel">
+        <h2>Messages</h2>
+        <div id="messageList" class="list_container"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
